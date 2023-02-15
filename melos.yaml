@@ -1,0 +1,107 @@
+name: flutter_boolean_template
+
+packages:
+  - packages/*
+  - "./"
+
+command:
+  bootstrap:
+    # It seems so that running "pub get" in parallel has some issues (like
+    # https://github.com/dart-lang/pub/issues/3404). Disabling this feature
+    # makes the CI much more stable.
+    runPubGetInParallel: false
+    usePubspecOverrides: true
+    hooks:
+      post: |
+        dart pub global activate coverage ^1.6.3
+
+# See https://github.com/firebase/flutterfire/blob/master/melos.yaml for more examples
+scripts:
+  # Custom lint is only applied to the packages and not the root app because of a dependency conflict with `integration_test` and `melos`
+  # which use different versions of `path`.
+  analyze:
+    run: melos run dart_analyze:pkg --no-select && melos run flutter_analyze:pkg --no-select && melos run custom_lint --no-select
+    description: Run `flutter analyze` in all packages.
+  
+  custom_lint:
+    run: melos run custom_lint:pkg --no-select
+    description: Run `dart run custom_lint` all packages with custom lints.
+  
+  custom_lint:pkg:
+    exec: dart run custom_lint
+    description: Run `dart run custom_lint` in the selected package.
+    packageFilters:
+      dependsOn: custom_lint
+      failFast: true
+
+  flutter_analyze:pkg:
+    exec: flutter analyze
+    description: Run `flutter analyze` in the selected package.
+    packageFilters:
+      dependsOn: flutter
+      failFast: true
+  
+  dart_analyze:pkg:
+    exec: dart analyze --fatal-infos
+    description: Run `dart analyze` dart packages.
+    packageFilters:
+      noDependsOn: flutter
+      failFast: true
+
+  format:
+    run: melos exec -- dart format .
+    description: Run `dart format` in all packages.
+
+  verify_format:
+    run: melos exec --fail-fast -- dart format --output=none --set-exit-if-changed .
+    description: Verify formatting was applied.
+
+  generate:
+    run: melos run generate:pkg --no-select
+    description: Run `build_runner build` in all packages.
+
+  generate:pkg:
+    exec: dart run build_runner build --delete-conflicting-outputs
+    description: Run `build_runner build` in the selected packages.
+    packageFilters:
+      failFast: true
+      dependsOn: build_runner
+      ignore: localization
+  
+  dart_test:pkg:
+    exec: dart pub global run coverage:test_with_coverage
+    description: Run Dart tests for a specific package in this project.
+    packageFilters:
+      dirExists: test
+      dependsOn: test
+      failFast: true
+      noDependsOn: flutter
+
+  flutter_test:pkg:
+    exec: flutter test --no-pub --coverage
+    description: Run Flutter tests for a specific package in this project.
+    packageFilters:
+      flutter: true
+      dirExists: test
+      failFast: true
+      dependsOn: flutter_test
+
+  test:
+    run: melos run flutter_test && melos run dart_test
+    description: Run all tests in this project.
+
+  flutter_test:
+    run: melos run flutter_test:pkg --no-select
+    description: Run all Flutter tests in this project.
+
+  dart_test:
+    run: melos run dart_test:pkg --no-select
+    description: Run all Flutter tests in this project.
+
+  loc:
+    exec: flutter gen-l10n
+    description: Run `flutter gen-l10n` in the localization package.
+    packageFilters:
+      dirExists: lib/src/translations
+      failFast: true
+      scope: localization
