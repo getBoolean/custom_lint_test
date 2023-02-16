@@ -17,6 +17,8 @@ dev_dependencies:
   custom_lint: ^0.2.5
   flutter_lints: ^2.0.1
   riverpod_lint: ^1.0.1
+  flutter_test:
+    sdk: flutter
   models:
     path: packages/models
 
